@@ -21,7 +21,8 @@ import com.astoria.movieapp.modules.ContextModule;
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
-public class ReviewFragment extends Fragment{
+public class
+ReviewFragment extends Fragment{
     private MovieApi movieApi;
     private ReviewAdapter reviewAdapter;
     private RecyclerView recyclerView;

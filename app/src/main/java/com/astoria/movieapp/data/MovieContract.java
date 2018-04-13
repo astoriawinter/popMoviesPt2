@@ -11,10 +11,11 @@ public class MovieContract {
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOVIE).build();
         public static final String TABLE_NAME = "movies";
         public static final String COLUMN_ID = "id";
+        public static final String COLUMN_TITLE = "title";
         public static final String COLUMN_DESCRIPTION = "description";
         public static final String COLUMN_DATE = "date";
         public static final String COLUMN_RATING = "rating";
         public static final String COLUMN_IMAGE_URI = "image_uri";
-        public static final String STATE = "state";
+        public static final String COLUMN_STATE = "state";
     }
 }

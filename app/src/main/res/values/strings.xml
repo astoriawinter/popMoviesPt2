@@ -3,6 +3,8 @@
     <string name="language">en-US</string>
     <string name="sort_popularity">popular</string>
     <string name="sort_top_rated">top_rated</string>
+    <string name="sort_favorites">favourite</string>
+    <string name="sort_favourites_label">favourites</string>
     <string name="sort_popularity_label">by popularity</string>
     <string name="sort_top_rated_label">by rating</string>
     <string name="menu_settings">Settings</string>

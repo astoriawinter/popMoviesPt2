@@ -21,6 +21,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.astoria.movieapp.data.MovieContract;
+import com.astoria.movieapp.interfaces.DaggerMovieComponent;
+import com.astoria.movieapp.interfaces.MovieComponent;
+import com.astoria.movieapp.modules.ContextModule;
 import com.squareup.picasso.Picasso;
 
 import java.time.Duration;
@@ -71,23 +74,38 @@ public class DetailedFragment extends Fragment {
         TextView rating = getView().findViewById(R.id.userRatingText);
         CollapsingToolbarLayout collapsing_toolbar = getView().findViewById(R.id.collapsing_toolbar);
         ImageView imageView = getView().findViewById(R.id.imageViewDetailed);
-        collapsing_toolbar.setTitle(getArguments().getString("title"));
+        String title = getArguments().getString("title");
+        collapsing_toolbar.setTitle(title);
         String dateString = getArguments().getString("date");
         date.setText(dateString);
         String ratingString = getArguments().getString("vote");
         String imageUri = getArguments().getString("poster");
+        String url = getArguments().getString("URL");
         rating.setText(ratingString);
-        Picasso.with(getContext())
-                .load(imageUri)
+        MovieComponent daggerMovieComponent = DaggerMovieComponent.builder()
+                .contextModule(new ContextModule(getActivity()))
+                .build();
+        Picasso picasso = daggerMovieComponent.getPicasso();
+        picasso.with(getContext())
+                .load(url)
                 .into(imageView);
         String id = getArguments().getString("id");
         Map<String, String> argsMap = new HashMap<>();
         argsMap.put("id", id);
+        argsMap.put("title", title);
         argsMap.put("description", overviewText);
         argsMap.put("date", dateString);
         argsMap.put("rating", ratingString);
         argsMap.put("image_uri", imageUri);
-        floatingActionButton.setOnClickListener(view -> favoriteClicked(id, argsMap));
+        floatingActionButton.setOnClickListener(view ->{
+            favoriteClicked(id, argsMap);
+        });
+        boolean favoriteWasAdded = findFavouriteById(id);
+        if (favoriteWasAdded) {
+            floatingActionButton.setImageResource(R.drawable.ic_favourite_white);
+        } else {
+            floatingActionButton.setImageResource(R.drawable.ic_favourite);
+        }
     }
     private boolean findFavouriteById(final String id) {
         ContentResolver contentResolver = getActivity().getContentResolver();
@@ -100,7 +118,7 @@ public class DetailedFragment extends Fragment {
         );
         if (cursor != null && cursor.getCount() > 0) {
             cursor.moveToFirst();
-            int idState = cursor.getColumnIndex(MovieContract.MovieEntry.STATE);
+            int idState = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_STATE);
             int state = cursor.getInt(idState);
             cursor.close();
             return state == 0;
@@ -111,6 +129,7 @@ public class DetailedFragment extends Fragment {
         ContentResolver contentResolver = getActivity().getContentResolver();
         ContentValues contentValues = new ContentValues();
         contentValues.put("id", map.get("id"));
+        contentValues.put("title", map.get("title"));
         contentValues.put("description", map.get("description"));
         contentValues.put("date", map.get("date"));
         contentValues.put("rating", map.get("rating"));
@@ -126,40 +145,6 @@ public class DetailedFragment extends Fragment {
                 null);
 
     }
-    /*
-            Observable.create(subscriber -> {
-            ContentResolver contentResolver = getActivity().getContentResolver();
-            Cursor cursor = contentResolver.query(
-                    MovieContract.MovieEntry.BASE_URI,
-                    null,
-                    "id = " + id,
-                    null,
-                    null
-            );
-            if (cursor != null && cursor.getCount() > 0) {
-                int idState = cursor.getColumnIndex(MovieContract.MovieEntry.STATE);
-                state = cursor.getInt(idState);
-                if (state == 1) {
-                    contentResolver.delete(
-                            MovieContract.MovieEntry.BASE_URI.buildUpon().appendPath(id).build(),
-                            "id = " + id,
-                            null);
-                    cursor.close();
-                }
-            } else {
-                ContentValues contentValues = new ContentValues();
-                contentValues.put("id", id);
-                contentValues.put("description", overviewText);
-                contentValues.put("date", dateString);
-                contentValues.put("rating", ratingString);
-                contentValues.put("image_uri", imageUri);
-                contentValues.put("state", 1);
-                contentResolver.insert(MovieContract.MovieEntry.BASE_URI, contentValues);
-            }
-        }).subscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe();
-    */
     private Observable<Boolean> handleFavourites(final String id, final Map<String, String> map){
         return Observable.create(subscriber -> {
             boolean favourite = findFavouriteById(id);
@@ -181,7 +166,6 @@ public class DetailedFragment extends Fragment {
                 .subscribe(new Subscriber<Boolean>() {
                     @Override
                     public void onCompleted() {
-
                     }
 
                     @Override

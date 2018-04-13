@@ -41,6 +41,7 @@ public class DetailedActivity extends AppCompatActivity {
         String date = intent.getStringExtra("date");
         String vote = intent.getStringExtra("vote");
         String poster = intent.getStringExtra("poster");
+        String URL = intent.getStringExtra("URL");
         Bundle detailedBundle = new Bundle();
         detailedBundle.putString("id", id);
         detailedBundle.putString("title", title);
@@ -48,6 +49,7 @@ public class DetailedActivity extends AppCompatActivity {
         detailedBundle.putString("date", date);
         detailedBundle.putString("vote", vote);
         detailedBundle.putString("poster", poster);
+        detailedBundle.putString("URL", URL);
         DetailedFragment detailed = new DetailedFragment();
         detailed.setArguments(detailedBundle);
         Bundle idBundle = new Bundle();

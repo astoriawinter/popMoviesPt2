@@ -8,7 +8,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class ResultMovie {
     String imagePath = "http://image.tmdb.org/t/p/";
-    String imageSize = "w500/";
+    String imageSize = "w185/";
     @SerializedName("vote_count")
     @Expose
     private Integer voteCount;
@@ -101,9 +101,11 @@ public class ResultMovie {
     }
 
     public String getPosterPath() {
+        return posterPath;
+    }
+    public String getFullPath(){
         return imagePath + imageSize + posterPath;
     }
-
     public void setPosterPath(String posterPath) {
         this.posterPath = posterPath;
     }

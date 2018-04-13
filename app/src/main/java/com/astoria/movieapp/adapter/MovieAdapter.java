@@ -23,7 +23,9 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
 
     private List<ResultMovie> resultMovieList = new ArrayList<>();
     private final Context context;
-    public MovieAdapter(Context context) {
+    private final Picasso picasso;
+    public MovieAdapter(Context context, Picasso picasso) {
+        this.picasso = picasso;
         this.context = context;
     }
     @Override
@@ -35,7 +37,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
     @Override
     public void onBindViewHolder(final MovieViewHolder holder, int position) {
         final ResultMovie resultMovie = resultMovieList.get(position);
-        final String posterPath = resultMovie.getPosterPath();
+        final String posterPath = resultMovie.getFullPath();
         holder.imageView.setOnClickListener((view)->
         {
             Intent intent = new Intent(context, DetailedActivity.class);
@@ -44,10 +46,11 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
             intent.putExtra("overview", resultMovie.getOverview());
             intent.putExtra("vote", resultMovie.getVoteAverage().toString());
             intent.putExtra("date", resultMovie.getReleaseDate());
-            intent.putExtra("poster", posterPath);
+            intent.putExtra("poster", resultMovie.getPosterPath());
+            intent.putExtra("URL", posterPath);
             context.startActivity(intent);
         });
-        Picasso.with(context)
+        picasso.with(context)
                 .load(posterPath)
                 .into(holder.imageView);
     }
@@ -55,7 +58,6 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
         int totalItem = getItemCount();
         resultMovieList.addAll(resultMovies);
         notifyItemRangeInserted(totalItem, getResultMovieList() - 1);
-
     }
     public void setData(List<ResultMovie> resultMovies) { resultMovieList = resultMovies; }
     @Override
@@ -65,11 +67,9 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
 
     class MovieViewHolder extends RecyclerView.ViewHolder{
         ImageView imageView;
-        TextView title;
         public MovieViewHolder(View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.imageViewDetailed);
-            title = itemView.findViewById(R.id.title);
         }
     }
 }
