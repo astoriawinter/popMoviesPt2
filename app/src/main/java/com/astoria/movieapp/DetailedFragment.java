@@ -2,6 +2,8 @@ package com.astoria.movieapp;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.annotation.MainThread;
@@ -10,6 +12,7 @@ import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NavUtils;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.text.method.MovementMethod;
 import android.view.LayoutInflater;
@@ -20,14 +23,17 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.astoria.movieapp.adapter.MovieAdapter;
 import com.astoria.movieapp.data.MovieContract;
 import com.astoria.movieapp.interfaces.DaggerMovieComponent;
 import com.astoria.movieapp.interfaces.MovieComponent;
+import com.astoria.movieapp.model.ResultMovie;
 import com.astoria.movieapp.modules.ContextModule;
 import com.squareup.picasso.Picasso;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import rx.Observable;
@@ -39,7 +45,6 @@ import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 
 public class DetailedFragment extends Fragment {
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,7 +67,6 @@ public class DetailedFragment extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
     }
-
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -154,6 +158,9 @@ public class DetailedFragment extends Fragment {
             }
             else{
                 deleteFavourite(id);
+                Intent intent = new Intent("favourite-updated");
+                intent.putExtra("MOVIE_ID_EXTRA", id);
+                LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
                 subscriber.onNext(false);
             }
             subscriber.onCompleted();

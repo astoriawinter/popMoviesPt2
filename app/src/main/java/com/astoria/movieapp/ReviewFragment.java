@@ -45,9 +45,9 @@ ReviewFragment extends Fragment{
     private Observable<Review> getReview(String id){
         return movieApi.getReviews
                 (id,
-                        BuildConfig.THE_MOVIE_DB_API_TOKEN,
-                        getString(R.string.language),
-                        page);
+                BuildConfig.THE_MOVIE_DB_API_TOKEN,
+                getString(R.string.language),
+                page);
     }
     private void loadDetailedReviews(String id){
         Observable<Review> reviewObservable = getReview(id);
@@ -60,8 +60,7 @@ ReviewFragment extends Fragment{
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_review, container, false);
-        return view;
+        return inflater.inflate(R.layout.fragment_review, container, false);
     }
 
 }

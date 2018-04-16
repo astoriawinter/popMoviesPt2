@@ -6,7 +6,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.astoria.movieapp.DetailedActivity;
 import com.astoria.movieapp.R;
@@ -14,20 +13,31 @@ import com.astoria.movieapp.model.ResultMovie;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHolder>{
-    public int getResultMovieList() {
+    private int getResultMovieListSize() {
         return resultMovieList == null ? 0 : resultMovieList.size();
     }
-
+    public void removeItemById(String id){
+        for (Iterator<ResultMovie> it = resultMovieList.iterator(); it.hasNext(); ) {
+            ResultMovie resultMovie = it.next();
+            if (resultMovie.getId().toString().equals(id)){
+                it.remove();
+                notifyDataSetChanged();
+            }
+        }
+    }
     private List<ResultMovie> resultMovieList = new ArrayList<>();
     private final Context context;
     private final Picasso picasso;
+
     public MovieAdapter(Context context, Picasso picasso) {
         this.picasso = picasso;
         this.context = context;
     }
+
     @Override
     public MovieViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.movie_list, parent, false);
@@ -57,7 +67,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHol
     public void addData(List<ResultMovie> resultMovies) {
         int totalItem = getItemCount();
         resultMovieList.addAll(resultMovies);
-        notifyItemRangeInserted(totalItem, getResultMovieList() - 1);
+        notifyItemRangeInserted(totalItem, getResultMovieListSize() - 1);
     }
     public void setData(List<ResultMovie> resultMovies) { resultMovieList = resultMovies; }
     @Override

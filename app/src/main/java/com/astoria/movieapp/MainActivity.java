@@ -1,10 +1,13 @@
 package com.astoria.movieapp;
 
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.preference.PreferenceManager;
@@ -38,7 +41,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     private RecyclerView recyclerView;
     private Observable<Movie> movies;
     private static int page = 0;
-    private boolean isEnd = false;
+    private boolean canBeLoaded = true;
+    private EndlessScrollListener scrollListener;
+    private BroadcastReceiver receiver;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,21 +53,12 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         final GridLayoutManager gridLayoutManager =
                 new GridLayoutManager(this, numberOfColumns, LinearLayoutManager.VERTICAL, false);
         recyclerView.setLayoutManager(gridLayoutManager);
-        EndlessScrollListener scrollListener = new EndlessScrollListener(gridLayoutManager) {
-            int pastVisiblesItems, visibleItemCount, totalItemCount;
+        scrollListener = new EndlessScrollListener(gridLayoutManager) {
             @Override
             public void onLoadMore(int page, final int totalItemsCount, final RecyclerView view) {
-                loadNextPage(getSortType(PreferenceManager.getDefaultSharedPreferences(MainActivity.this)));
-            }
-
-            @Override
-            public void onScrolled(RecyclerView view, int dx, int dy) {
-                super.onScrolled(recyclerView, dx, dy);
-                visibleItemCount = gridLayoutManager.getChildCount();
-                totalItemCount = gridLayoutManager.getItemCount();
-                pastVisiblesItems = gridLayoutManager.findFirstVisibleItemPosition();
-                if (visibleItemCount + pastVisiblesItems >= totalItemCount && !isEnd) {
-                    onLoadMore(page, totalItemCount, recyclerView);
+                if (canBeLoaded) {
+                    scrollListener.setLoading(true);
+                    loadNextPage(getSortType(PreferenceManager.getDefaultSharedPreferences(MainActivity.this)));
                 }
             }
         };
@@ -73,6 +69,19 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         movieApi = daggerMovieComponent.getMoveiApi();
         Picasso picasso = daggerMovieComponent.getPicasso();
         movieAdapter = new MovieAdapter(MainActivity.this, picasso);
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if(intent.hasExtra("MOVIE_ID_EXTRA")){
+                    String id = intent.getStringExtra("MOVIE_ID_EXTRA");
+                    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(MainActivity.this);
+                    if (getString(R.string.sort_favorites).equals(getSortType(sharedPreferences))){
+                        movieAdapter.removeItemById(id);
+                    }
+                }
+            }
+        };
+        LocalBroadcastManager.getInstance(this).registerReceiver(receiver, new IntentFilter("favourite-updated"));
         SetupSharedPrefrences();
     }
     private void SetupSharedPrefrences()
@@ -82,19 +91,20 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         loadNextPage(sort);
         sharedPreferences.registerOnSharedPreferenceChangeListener(this);
     }
+
     private String getSortType(SharedPreferences sharedPreferences)
     {
         return sharedPreferences.getString(getString(R.string.sort_key), getString(R.string.sort_popularity));
     }
     private Cursor listFavourites(){
-            ContentResolver contentResolver = getContentResolver();
-            return contentResolver.query(
-                    MovieContract.MovieEntry.CONTENT_URI,
-                    null,
-                    "state = 1",
-                    null,
-                    null
-            );
+        ContentResolver contentResolver = getContentResolver();
+        return contentResolver.query(
+                MovieContract.MovieEntry.CONTENT_URI,
+                null,
+                "state = 1",
+                null,
+                null
+        );
     }
     private List<ResultMovie> retrieveData(){
         Cursor cursor = listFavourites();
@@ -121,49 +131,72 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
         return null;
     }
-    private void loadNextPage(String type) {
-        switch (type) {
-            case "top_rated" :
-            case "popular": {
-                movies = getMovies(type);
-                break;
-            }
-            case "favourite" :
-            {
-                movies = getFavourites();
-                break;
-            }
-        }
-            movies.subscribeOn(Schedulers.newThread())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Observer<Movie>() {
-                        @Override
-                        public void onCompleted() {
-                        }
+    private void onLoadFavourites() {
+        movies = getFavourites();
+        movies.subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Movie>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+                    @Override
+                    public void onError(Throwable e) {
+                    }
 
-                        @Override
-                        public void onError(Throwable e) {
-
-                        }
-                        @Override
-                        public void onNext(Movie movie) {
-                        if (page == 1) {
-                                movieAdapter.setData(movie.getResultMovies());
-                                recyclerView.setAdapter(movieAdapter);
-                            }
-                            else movieAdapter.addData(movie.getResultMovies());
-                        }
-                    });
+                    @Override
+                    public void onNext(Movie movie) {
+                        scrollListener.setLoading(false);
+                        movieAdapter.setData(movie.getResultMovies());
+                        recyclerView.setAdapter(movieAdapter);
+                    }
+                });
     }
+    private void loadNextPage(String type){
+        switch (type) {
+            case "favourite":
+                onLoadFavourites();
+                break;
+            case "popular":
+            case "top_rated":
+                loadMoviesPage(type);
+                break;
+        }
+    }
+    private void loadMoviesPage(String type) {
+        movies = getMovies(type);
+        movies.subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<Movie>() {
+                    @Override
+                    public void onCompleted() {
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                    }
+
+                    @Override
+                    public void onNext(Movie movie) {
+                        if (page == 1) {
+                            scrollListener.resetState();
+                            movieAdapter.setData(movie.getResultMovies());
+                            recyclerView.setAdapter(movieAdapter);
+                        } else {
+                            scrollListener.setLoading(false);
+                            movieAdapter.addData(movie.getResultMovies());
+                        }
+                    }
+                });
+    }
+
     private Observable<Movie> getFavourites(){
-        isEnd = true;
-        page++;
+        canBeLoaded = false;
         Movie movie = new Movie();
         movie.setResultMovies(retrieveData());
         return Observable.just(movie);
     }
     private Observable<Movie> getMovies(String sort) {
-        isEnd = false;
+        canBeLoaded = true;
         return movieApi.getMovie(
                 sort,
                 BuildConfig.THE_MOVIE_DB_API_TOKEN,
@@ -196,7 +229,6 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
         return super.onOptionsItemSelected(item);
     }
-
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (key.equals(getString(R.string.sort_key))) {
@@ -209,6 +241,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(this);
     }
 }

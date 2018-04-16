@@ -24,6 +24,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
         final ResultReview resultReview = resultReviewList.get(position);
         final String reviewText = resultReview.getContent();
         holder.reviewText.setText(reviewText);
+        holder.author.setText(resultReview.getAuthor());
     }
     public void setData(List<ResultReview> resultReviews) {
         resultReviewList = resultReviews;
@@ -36,9 +37,11 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
 
     class ReviewViewHolder extends RecyclerView.ViewHolder{
         TextView reviewText;
+        TextView author;
         public ReviewViewHolder(View itemView) {
             super(itemView);
             reviewText = itemView.findViewById(R.id.reviewText);
+            author = itemView.findViewById(R.id.authorTextView);
         }
     }
 }
